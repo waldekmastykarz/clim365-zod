@@ -1,20 +1,8 @@
 import fs from 'fs';
 import parse from 'yargs-parser';
-import { ZodType, ZodTypeAny, z } from 'zod';
+import { ZodTypeAny, z } from 'zod';
 
-// define alias method for ZodType
-// (ZodType.prototype as any).alias = function (alias: string) {
-//   const This = (this as any).constructor;
-//   return new This({
-//     ...this._def,
-//     alias,
-//   });
-// };
-
-// interface ZodAliasType<T extends ZodTypeAny> {
-//   alias: (alias: string) => T;
-// }
-
+// we need to use a function or we lose the schema type information
 function alias<T extends ZodTypeAny>(alias: string, type: T) {
   type._def.alias = alias;
   return type;
@@ -25,9 +13,7 @@ interface OptionInfo {
   alias?: string;
   required: boolean;
   autocomplete?: string[];
-  type: 'string' | 'boolean' | 'number' | 'flag';
-  // require to distinguish between flag and boolean options
-  hasDefault: boolean;
+  type: 'string' | 'boolean' | 'number';
 }
 
 const OutputType = z.enum(['csv', 'json', 'md', 'text', 'none']);
@@ -179,8 +165,7 @@ function parseObject(def: z.ZodObjectDef, options: OptionInfo[], currentOption?:
       name: key,
       alias: property._def.alias,
       required: true,
-      type: 'string',
-      hasDefault: false
+      type: 'string'
     };
 
     parseDef(property._def, options, option);
@@ -206,7 +191,7 @@ function parseNumber(def: z.ZodNumberDef, options: OptionInfo[], currentOption?:
 
 function parseBoolean(def: z.ZodBooleanDef, options: OptionInfo[], currentOption?: OptionInfo): z.ZodTypeDef | undefined {
   if (currentOption) {
-    currentOption.type = currentOption.hasDefault ? 'flag' : 'boolean';
+    currentOption.type = 'boolean';
   }
   return;
 }
@@ -220,10 +205,6 @@ function parseOptional(def: z.ZodOptionalDef, options: OptionInfo[], currentOpti
 }
 
 function parseDefault(def: z.ZodDefaultDef, options: OptionInfo[], currentOption?: OptionInfo): z.ZodTypeDef | undefined {
-  if (currentOption) {
-    currentOption.hasDefault = true;
-  }
-
   return def.innerType._def;
 }
 
